@@ -1,1 +1,1 @@
-# digitalriver-transactional-email
+# digital-river-transactional-email
