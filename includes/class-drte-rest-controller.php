@@ -50,6 +50,7 @@ class DRTE_REST_Controller extends WP_REST_Controller {
     $webhook_type     = $params["type"];
     $data             = $params["data"]["object"];
 		$cordialBody			= [];
+		$cordialEmailKey	= "shelly_dr_api_test";
 		if ( $webhook_type === "fulfillment.created" ) {
 			/*
 			order.created = OrderConfirmation email
@@ -58,16 +59,19 @@ class DRTE_REST_Controller extends WP_REST_Controller {
 			order.refunded = refund email
 			*/
 			// && $item['cancelQuantity'] > 0
-			echo $item['trackingNumber'];
-			if (empty($item['trackingNumber'])) {
+			//echo $item['trackingNumber'];
+			//return $data['trackingNumber'];
+			if (empty($data['trackingNumber']) || null === $data['trackingNumber']) {
 				$webhook_type = $webhook_type.".canceled";
 				$cordialBody = $this->getFulfillmentCreatedCanceledCordialBody($data);
 			} else {
 				$webhook_type = $webhook_type.".shipped";
 				$cordialBody = $this->getFulfillmentCreatedShippedCordialBody($data);
+				$cordialEmailKey = "dr-webhook-fulfillment-created-shipped";
 			}
 		} else if ($webhook_type === "order.created") {
 		    $cordialBody = $this->getOrderCreatedCordialBody($data);
+				$cordialEmailKey = "dr-webhook-order-confirmation";
 		} else if ($webhook_type === "order.refunded") {
 		    $cordialBody = $this->getOrderRefundedCordialBody($data);
 		}
@@ -75,95 +79,24 @@ class DRTE_REST_Controller extends WP_REST_Controller {
 
     file_put_contents(plugin_dir_path( dirname( __FILE__ ) ).$webhook_type.'.json', json_encode($params));
 
-		$reponse = $this->cordial->postNotification("",$cordialBody);
+		$reponse = $this->cordial->postNotification($cordialEmailKey,$cordialBody);
 
 		file_put_contents(plugin_dir_path( dirname( __FILE__ ) ).$webhook_type.'_reponse.json', json_encode($reponse));
 
 		return $reponse;
 	}
 	private function getFulfillmentCreatedShippedCordialBody($data) {
-		$orderId          = $data["id"];
-		$email          	= $data["metadata"]["email"];
-		$name	          	= $data["metadata"]["name"];
-		$cordialBody =  [
-        'identifyBy'    => 'email',
-        'to'            => [
-            'contact'       => [
-                'email'         => "shelly.lan@gmail.com",
-            ],
-            'extVars'           => [
-                'dr_name'       => "Shelly Chan",
-                'dr_address'     => $orderId
-            ],
-        ],
-    ];
-		return $cordialBody;
-	}
-	private function getFulfillmentCreatedCanceledCordialBody($data) {
-		$orderId          = $data["id"];
-		$email          	= $data["metadata"]["email"];
-		$name	          	= $data["metadata"]["name"];
-		$cordialBody =  [
-        'identifyBy'    => 'email',
-        'to'            => [
-            'contact'       => [
-                'email'         => $email,
-            ],
-            'extVars'           => [
-                'dr_name'       => $name,
-                'dr_address'     => $orderId
-            ],
-        ],
-    ];
-		return $cordialBody;
-	}
-	private function getOrderRefundedCordialBody($data) {
-		$orderId          = $data["id"];
-		$email          	= $data["metadata"]["email"];
-		$name	          	= $data["metadata"]["name"];
-		$reason						= $data["reason"];
-		$refundedAmount		= $data["refundedAmount"];
-		
-		$cordialBody =  [
-        'identifyBy'    => 'email',
-        'to'            => [
-            'contact'       => [
-                'email'         => $email,
-            ],
-            'extVars'           => [
-                'dr_name'       => $name,
-                'dr_address'     => $orderId." ".$reason." ".$refundedAmount." "
-            ],
-        ],
-    ];
-		return $cordialBody;
-	}
-	private function getOrderCreatedCordialBody($data) {
-		$orderId          = $data["id"];
-    $email            = $data["email"];
-    $shipto_name      = $data["shipTo"]["name"];
-    $shipto_address   = $data["shipTo"]["address"]["line1"]." ".
-                        $data["shipTo"]["address"]["city"]." ".
-                        $data["shipTo"]["address"]["postalCode"]." ".
-                        $data["shipTo"]["address"]["state"]." ".
-                        $data["shipTo"]["address"]["country"]." ";
-    $shipFrom_address = $data["shipFrom"]["address"]["line1"]." ".
-                        $data["shipFrom"]["address"]["city"]." ".
-                        $data["shipFrom"]["address"]["postalCode"]." ".
-                        $data["shipFrom"]["address"]["state"]." ".
-                        $data["shipFrom"]["address"]["country"]." ";
-    $totalAmount      = $data["totalAmount"];
-		$subtotal		      = $data["subtotal"];
-		$totalTax 		    = $data["totalTax"];
-		$totalShipping    = $data["totalShipping"];
-    $items = array();
+		$orderId          = $data["orderId"];
+		$email    			  = (!empty($data['metadata']) && !empty($data['metadata']['email'])) ? $data['metadata']['email'] : null;
+		$name					    = (!empty($data['metadata']) && !empty($data['metadata']['name'])) ? $data['metadata']['name'] : null;
+		$address			    = (!empty($data['metadata']) && !empty($data['metadata']['address'])) ? $data['metadata']['address'] : null;
+		$items = array();
 		if(array_key_exists('items', $data)) {
 			foreach($data['items'] as $item) {
           $items[] = array (
-              'sku'       			=> $item['skuId'] == 'SKU' ? $item['skuId'] : null,
+              'sku'       			=> $item['skuId'],
               'quantity'  			=> !empty($item['quantity']) ? $item['quantity'] : null,
-              'amount'  				=> !empty($item['amount']) ? $item['amount'] : null,
-              'descriptions'  	=> (!empty($item['metadata']) && !empty($item['metadata']['lineCustomAttribute'])) ? $item['metadata']['lineCustomAttribute'] : null,
+              'name'  					=> (!empty($item['metadata']) && !empty($item['metadata']['name'])) ? $item['metadata']['name'] : null,
           );
       }
 		}
@@ -171,11 +104,123 @@ class DRTE_REST_Controller extends WP_REST_Controller {
         'identifyBy'    => 'email',
         'to'            => [
             'contact'       => [
-                'email'         => $email, //"shelly.lan@gmail.com",
+                'email'         => $email,
+            ],
+            'extVars'            		 => [
+                'dr_orderId'     		 => $orderId,
+                'dr_name'       		 => $name,
+                'dr_address'     		 => $address,
+		            'dr_trackingCompany' => $data["trackingCompany"],
+				        'dr_trackingNumber'  => $data["trackingNumber"],
+				        'dr_trackingUrl'     => $data["trackingUrl"],
+								'dr_items'     	   	 => $items
+            ],
+        ],
+    ];
+		return $cordialBody;
+	}
+	private function getFulfillmentCreatedCanceledCordialBody($data) {
+		$orderId          = $data["orderId"];
+		$email    			  = (!empty($data['metadata']) && !empty($data['metadata']['email'])) ? $data['metadata']['email'] : null;
+		$name					    = (!empty($data['metadata']) && !empty($data['metadata']['name'])) ? $data['metadata']['name'] : null;
+		$items = array();
+		if(array_key_exists('items', $data)) {
+			foreach($data['items'] as $item) {
+          $items[] = array (
+              'sku'       			=> $item['skuId'],
+              'quantity'  => !empty($item['cancelQuantity']) ? $item['cancelQuantity'] : null,
+              'name'  					=> (!empty($item['metadata']) && !empty($item['metadata']['name'])) ? $item['metadata']['name'] : null,
+          );
+      }
+		}
+		$cordialBody =  [
+        'identifyBy'    => 'email',
+        'to'            => [
+            'contact'       => [
+                'email'         => $email,
+            ],
+            'extVars'            		 => [
+                'dr_orderId'     		 => $orderId,
+                'dr_name'       		 => $name,
+								'dr_items'     	   	 => $items
+            ],
+        ],
+    ];
+		return $cordialBody;
+	}
+	private function getOrderRefundedCordialBody($data) {
+		$orderId           = $data["id"];
+    $email             = $data["email"];
+    $name 		         = $data["shipTo"]["name"];
+    $items = array();
+		if(array_key_exists('items', $data)) {
+			foreach($data['items'] as $item) {
+          $items[] = array (
+              'sku'       			=> $item['skuId'],
+              'quantity'  			=> !empty($item['quantity']) ? $item['quantity'] : null,
+              'name'  					=> (!empty($item['metadata']) && !empty($item['metadata']['name'])) ? $item['metadata']['name'] : null,
+          );
+      }
+		}
+		$cordialBody =  [
+        'identifyBy'    => 'email',
+        'to'            => [
+            'contact'       => [
+                'email'        			=> $email,
             ],
             'extVars'           => [
-                'dr_name'       => $shipto_name, //"Shelly Chan",
-                'dr_address'     => $shipto_address
+                'dr_orderId'     		=> $orderId,
+                'dr_name'       		=> $data["shipTo"]["name"],
+								'dr_items'     	  	=> $items
+            ],
+        ],
+    ];
+		return $cordialBody;
+	}
+	private function getOrderCreatedCordialBody($data) {
+		$orderId           = $data["id"];
+    $email             = $data["email"];
+    $name 		         = $data["shipTo"]["name"];
+    $shipTo_email      = (!empty($data["shipTo"]['metadata']) && !empty($data["shipTo"]['metadata']['email'])) ? $data["shipTo"]['metadata']['email'] : null;
+		$shipFrom_name     = (!empty($data["shipFrom"]['metadata']) && !empty($data["shipFrom"]['metadata']['name'])) ? $data["shipFrom"]['metadata']['name'] : null;
+    $totalAmount       = $data["totalAmount"];
+		$subtotal		       = $data["subtotal"];
+		$totalTax 		     = $data["totalTax"];
+		$totalShipping     = $data["totalShipping"];
+    $items = array();
+		if(array_key_exists('items', $data)) {
+			foreach($data['items'] as $item) {
+          $items[] = array (
+              'sku'       			=> $item['skuId'],
+              'quantity'  			=> !empty($item['quantity']) ? $item['quantity'] : null,
+              'amount'  				=> !empty($item['amount']) ? $item['amount'] : null,
+              'name'  					=> (!empty($item['metadata']) && !empty($item['metadata']['name'])) ? $item['metadata']['name'] : null,
+          );
+      }
+		}
+		$cordialBody =  [
+        'identifyBy'    => 'email',
+        'to'            => [
+            'contact'       => [
+                'email'        			=> $email,
+            ],
+            'extVars'           => [
+                'dr_orderId'     		=> $orderId,
+                'dr_name'       		=> $name,
+                'dr_shipTo'   			=> [
+		                'email'     		=> $shipTo_email,
+										'address'   		=> $data["shipTo"]["address"],
+										'name'      		=> $data["shipTo"]["name"],
+			           ],
+							 	 'dr_shipFrom'   		=> [
+										'address'   		=> $data["shipFrom"]["address"],
+										'name'      		=> $shipFrom_name,
+			           ],
+								 'dr_items'     	  => $items,
+								 'dr_totalAmount'  	=> $data["totalAmount"],
+								 'dr_subtotal'     	=> $data["subtotal"],
+								 'dr_totalTax'     	=> $data["totalTax"],
+								 'dr_totalShipping'	=> $data["totalShipping"]
             ],
         ],
     ];

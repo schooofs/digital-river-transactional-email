@@ -30,9 +30,19 @@ class CI_Cordial
     }
     public function postNotification( $templateKeyPostfix , $data ) {
         $response = $this->httpClient->request('POST',
+        $this->endPoint . $templateKeyPostfix .'/send' ,  [
+            'form_params' => $data,
+        ] );
+        /*
+        $response = $this->httpClient->request('POST',
         $this->endPoint . $this->templateKeyPrefix . $templateKeyPostfix .'/send' ,  [
             'form_params' => $data,
         ] );
+        */
+        //$this->endPoint . $this->templateKeyPrefix .'dr-webhook-order-confirmation/send' ,  [
+        //    'form_params' => $data,
+        //] );
+
         $response = json_decode($response->getBody(), true);
         $response['url'] = $this->endPoint . $this->templateKeyPrefix . $templateKeyPostfix .'/send';
         return $response;
