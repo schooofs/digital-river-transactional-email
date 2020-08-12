@@ -29,8 +29,9 @@ class CI_Cordial
         }
     }
     public function postNotification( $templateKeyPostfix , $data ) {
+
         $response = $this->httpClient->request('POST',
-        $this->endPoint . $templateKeyPostfix .'/send' ,  [
+        $this->endPoint . $this->templateKeyPrefix . $templateKeyPostfix .'/send' ,  [
             'form_params' => $data,
         ] );
         /*
@@ -43,6 +44,7 @@ class CI_Cordial
         //    'form_params' => $data,
         //] );
 
+            error_log(  $this->endPoint . $this->templateKeyPrefix . $templateKeyPostfix);
         $response = json_decode($response->getBody(), true);
         $response['url'] = $this->endPoint . $this->templateKeyPrefix . $templateKeyPostfix .'/send';
         return $response;

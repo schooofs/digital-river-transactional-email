@@ -62,27 +62,27 @@ class DRTE_REST_Controller extends WP_REST_Controller {
 			//echo $item['trackingNumber'];
 			//return $data['trackingNumber'];
 			if (empty($data['trackingNumber']) || null === $data['trackingNumber']) {
-				$webhook_type = $webhook_type.".canceled";
+				$webhook_type = $webhook_type."-canceled";
 				$cordialBody = $this->getFulfillmentCreatedCanceledCordialBody($data);
 			} else {
-				$webhook_type = $webhook_type.".shipped";
+				$webhook_type = $webhook_type."-shipped";
 				$cordialBody = $this->getFulfillmentCreatedShippedCordialBody($data);
-				$cordialEmailKey = "dr-webhook-fulfillment-created-shipped";
+				//$cordialEmailKey = "dr-webhook-fulfillment-created-shipped";
 			}
 		} else if ($webhook_type === "order.created") {
 		    $cordialBody = $this->getOrderCreatedCordialBody($data);
-				$cordialEmailKey = "dr-webhook-order-confirmation";
+				//$cordialEmailKey = "dr-webhook-order-confirmation";
 		} else if ($webhook_type === "order.refunded") {
 		    $cordialBody = $this->getOrderRefundedCordialBody($data);
 		}
-		$template_type    = str_replace(".","_",$webhook_type);
+		$template_type    = str_replace(".","-",$webhook_type);
 
     file_put_contents(plugin_dir_path( dirname( __FILE__ ) ).$webhook_type.'.json', json_encode($params));
 
-		$reponse = $this->cordial->postNotification($cordialEmailKey,$cordialBody);
+		$reponse = $this->cordial->postNotification($template_type,$cordialBody);
 
 		file_put_contents(plugin_dir_path( dirname( __FILE__ ) ).$webhook_type.'_reponse.json', json_encode($reponse));
-
+		//return $template_type;
 		return $reponse;
 	}
 	private function getFulfillmentCreatedShippedCordialBody($data) {
@@ -192,8 +192,9 @@ class DRTE_REST_Controller extends WP_REST_Controller {
 			foreach($data['items'] as $item) {
           $items[] = array (
               'sku'       			=> $item['skuId'],
-              'quantity'  			=> !empty($item['quantity']) ? $item['quantity'] : null,
-              'amount'  				=> !empty($item['amount']) ? $item['amount'] : null,
+              'quantity'  			=> !empty($item['quantity']) ? $item['quantity'] : 0,
+              'amount'  				=> !empty($item['amount']) ? $item['amount'] : 0.00,
+							'totalAmount'  	  => (!empty($item['amount']) && !empty($item['quantity']))  ? $item['amount']*$item['quantity'] : 0.00,
               'name'  					=> (!empty($item['metadata']) && !empty($item['metadata']['name'])) ? $item['metadata']['name'] : null,
           );
       }
