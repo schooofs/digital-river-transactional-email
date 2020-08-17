@@ -1,6 +1,4 @@
 <?php
-//if ( ! defined('BASEPATH')) exit('No direct script access allowed');
-
 class CI_Cordial
 {
 
@@ -34,60 +32,11 @@ class CI_Cordial
         $this->endPoint . $this->templateKeyPrefix . $templateKeyPostfix .'/send' ,  [
             'form_params' => $data,
         ] );
-        /*
-        $response = $this->httpClient->request('POST',
-        $this->endPoint . $this->templateKeyPrefix . $templateKeyPostfix .'/send' ,  [
-            'form_params' => $data,
-        ] );
-        */
-        //$this->endPoint . $this->templateKeyPrefix .'dr-webhook-order-confirmation/send' ,  [
-        //    'form_params' => $data,
-        //] );
 
-            error_log(  $this->endPoint . $this->templateKeyPrefix . $templateKeyPostfix);
+        //    error_log(  $this->endPoint . $this->templateKeyPrefix . $templateKeyPostfix);
         $response = json_decode($response->getBody(), true);
         $response['url'] = $this->endPoint . $this->templateKeyPrefix . $templateKeyPostfix .'/send';
-        return $response;
-    }
-/*
-    public function post_DR_API_TEST2($cordialBody) {
-        $response = $this->httpClient->request('POST', $this->endPoint . $this->templateKey. '/send' ,  [
-            'form_params' => $cordialBody,
-        ] );
-        $response = json_decode($response->getBody(), true);
-        $response['url'] = $this->endPoint;
 
         return $response;
     }
-    public function post_DR_API_TEST($data) {
-        $cordialBody =  [
-                'identifyBy'    => 'email',
-                'to'            => [
-                    'contact'       => [
-                        'email'         => "shelly.lan@gmail.com",
-                    ],
-                    'extVars'           => [
-                        'dr_name'       => "Shelly Chan",
-                        'dr_address'     => "somewhere in Tokyo"
-                    ],
-                ],
-            ];
-        $response = $this->httpClient->request('POST', $this->endPoint . $this->templateKey. '/send' ,  [
-            'form_params' => $cordialBody,
-        ] );
-        $response = json_decode($response->getBody(), true);
-        $response['url'] = $this->endPoint;
-
-        return $response;
-    }
-    */
-
-    // public function postPasswordReset($data) {
-    //     $response = $this->httpClient->request('POST', $this->endPoint . 'test/send' ,  [
-    //         'form_params' => $data,
-    //     ] );
-    //     $response = json_decode($response->getBody(), true);
-    //     $response['url'] = $this->endPoint;
-    //     return $response;
-    // }
 }
