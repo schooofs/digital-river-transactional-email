@@ -1,4 +1,4 @@
-<?php
+	<?php
 class DRTE_REST_Controller extends WP_REST_Controller {
 
 	protected $cordial;
@@ -20,9 +20,8 @@ class DRTE_REST_Controller extends WP_REST_Controller {
 	public function register_routes() {
     register_rest_route($this->namespace, '/' . $this->rest_base , array(
         'methods' 	=> 'POST',
-        'callback'  => array( $this, 'cordial_confirmation' )//'my_awesome_func'//
+        'callback'  => array( $this, 'cordial_confirmation' )
     ));
-		//print_r( $this->get_collection_params() );
 	}
 
   /**
@@ -32,52 +31,53 @@ class DRTE_REST_Controller extends WP_REST_Controller {
 	 * @return WP_Error|WP_REST_Response
 	 */
 	public function cordial_confirmation( $request ) {
-		
+
+		$response					= [];
 		$params 					= $request->get_params();
     $webhook_type			= $params["type"];
+		$template_type    = str_replace(".","-",$webhook_type);
     $data             = $params["data"]["object"];
 
 		$cordialBody = [];
 		if ( $webhook_type === "fulfillment.created" ) {
-
-				if (empty($data['trackingNumber']) || null === $data['trackingNumber']) {
-					$webhook_type = $webhook_type."-canceled";
-					$cordialBody 	= $this->getFulfillmentCreatedCanceledCordialBody($data);
-				} else {
-					$webhook_type = $webhook_type."-shipped";
-					$cordialBody 	= $this->getFulfillmentCreatedShippedCordialBody($data);
-				}
+				$reponse = $this->postFulfillmentCreatedCordialNotification( $template_type, $data);
 
 		} else if ($webhook_type === "order.created") {
-		    $cordialBody 	= $this->getOrderCreatedCordialBody($data);
+		    //$cordialBody 	= $this->getOrderCreatedCordialBody($data);
+				$reponse = $this->postOrderCreatedCordialNotification( $template_type, $data );
 		} else if ($webhook_type === "order.refunded") {
-		    $cordialBody 	= $this->getOrderRefundedCordialBody($data);
+		    //$cordialBody 	= $this->getOrderRefundedCordialBody($data);
+				//$reponse = $this->cordial->postNotification($template_type,$cordialBody);
+				$reponse = $this->postOrderRefundedCordialNotification( $template_type, $data);
 		}
 
-		$template_type    = str_replace(".","-",$webhook_type);
 
-    file_put_contents(plugin_dir_path( dirname( __FILE__ ) ).$webhook_type.'.json', json_encode($params));
 
-		$reponse = $this->cordial->postNotification($template_type,$cordialBody);
+    //file_put_contents(plugin_dir_path( dirname( __FILE__ ) ).$webhook_type.'.json', json_encode($params));
 
-		file_put_contents(plugin_dir_path( dirname( __FILE__ ) ).$webhook_type.'_reponse.json', json_encode($reponse));
-		//return $template_type;
+		//$reponse = $this->cordial->postNotification($template_type,$cordialBody);
+
+		//file_put_contents(plugin_dir_path( dirname( __FILE__ ) ).$webhook_type.'_reponse.json', json_encode($reponse));
+
 		return $reponse;
 	}
-	private function getFulfillmentCreatedShippedCordialBody($data) {
+	private function postFulfillmentCreatedCordialNotification ( $template_type, $data ) {
 
 		$orderId	= $data["orderId"];
 		$email		= (!empty($data['metadata']) && !empty($data['metadata']['email'])) ? $data['metadata']['email'] : null;
 		$name			= (!empty($data['metadata']) && !empty($data['metadata']['name'])) ? $data['metadata']['name'] : null;
 		$address	= (!empty($data['metadata']) && !empty($data['metadata']['address'])) ? $data['metadata']['address'] : null;
 
+		$isCanceled = false;
 		$items	= array();
 		if(array_key_exists('items', $data)) {
 				foreach($data['items'] as $item) {
+						$isCanceled = ($isCanceled === false && !empty($item['cancelQuantity'])) ? true : false;
 	          $items[] = array (
-	              'sku'				=> $item['skuId'],
-	              'quantity'  => !empty($item['quantity']) ? $item['quantity'] : null,
-	              'name'  		=> (!empty($data['metadata']) && !empty($data['metadata'][$item['skuId']])) ? $data['metadata'][$item['skuId']]:$item['skuId'],
+	              'sku'							=> $item['skuId'],
+	              'quantity'  			=> !empty($item['quantity']) ? $item['quantity'] : null,
+	              'cancelQuantity'  => !empty($item['cancelQuantity']) ? $item['cancelQuantity'] : null,
+	              'name'  					=> (!empty($data['metadata']) && !empty($data['metadata'][$item['skuId']])) ? $data['metadata'][$item['skuId']]:$item['skuId'],
 	          );
 	      }
 		}
@@ -99,43 +99,13 @@ class DRTE_REST_Controller extends WP_REST_Controller {
             ],
         ],
     ];
+		$template_type = $template_type.( ($isCanceled) ? "-canceled" : "-shipped");
+		$reponse = $this->cordial->postNotification( $template_type, $cordialBody );
 
-		return $cordialBody;
+		return $reponse;
 	}
-	private function getFulfillmentCreatedCanceledCordialBody($data) {
 
-		$orderId	= $data["orderId"];
-		$email		= (!empty($data['metadata']) && !empty($data['metadata']['email'])) ? $data['metadata']['email'] : null;
-		$name			= (!empty($data['metadata']) && !empty($data['metadata']['name'])) ? $data['metadata']['name'] : null;
-
-		$items	= array();
-		if(array_key_exists('items', $data)) {
-				foreach($data['items'] as $item) {
-	          $items[] = array (
-	              'sku'     	=> $item['skuId'],
-	              'quantity'	=> !empty($item['cancelQuantity']) ? $item['cancelQuantity'] : null,
-								'name'  		=> (!empty($data['metadata']) && !empty($data['metadata'][$item['skuId']])) ? $data['metadata'][$item['skuId']]:$item['skuId'],
-	          );
-	      }
-		}
-
-		$cordialBody =  [
-        'identifyBy'  => 'email',
-        'to'	=> [
-            'contact'	=> [
-                'email'			=> $email,
-            ],
-            'extVars'	=> [
-                'dr_orderId'=> $orderId,
-                'dr_name'		=> $name,
-								'dr_items'	=> $items
-            ],
-        ],
-    ];
-
-		return $cordialBody;
-	}
-	private function getOrderRefundedCordialBody($data) {
+	private function postOrderRefundedCordialNotification( $template_type, $data ) {
 
 		$orderId	= $data["id"];
     $email		= $data["email"];
@@ -164,15 +134,16 @@ class DRTE_REST_Controller extends WP_REST_Controller {
             ],
         ],
     ];
-		return $cordialBody;
+
+		$reponse = $this->cordial->postNotification( $template_type, $cordialBody );
+
+		return $reponse;
 	}
-	private function getOrderCreatedCordialBody($data) {
+	private function postOrderCreatedCordialNotification( $template_type, $data ) {
 
 		$orderId				= $data["id"];
     $email					= $data["email"];
 	  $name						= $data["shipTo"]["name"];
-    $shipTo_email		= (!empty($data["shipTo"]['metadata']) && !empty($data["shipTo"]['metadata']['email'])) ? $data["shipTo"]['metadata']['email'] : null;
-		$shipFrom_name	= (!empty($data["shipFrom"]['metadata']) && !empty($data["shipFrom"]['metadata']['name'])) ? $data["shipFrom"]['metadata']['name'] : null;
     $totalAmount		= $data["totalAmount"];
 		$subtotal				= $data["subtotal"];
 		$totalTax				= $data["totalTax"];
@@ -201,13 +172,9 @@ class DRTE_REST_Controller extends WP_REST_Controller {
                 'dr_orderId'				=> $orderId,
                 'dr_name'						=> $name,
                 'dr_shipTo'			=> [
-		                'email'     		=> $shipTo_email,
+		                //'email'     		=> $shipTo_email,
 										'address'				=> $data["shipTo"]["address"],
 										'name'					=> $data["shipTo"]["name"],
-			           ],
-							 	 'dr_shipFrom'	=> [
-										'address'				=> $data["shipFrom"]["address"],
-										'name'					=> $shipFrom_name,
 			           ],
 								 'dr_items'					=> $items,
 								 'dr_totalAmount'		=> $data["totalAmount"],
@@ -218,7 +185,9 @@ class DRTE_REST_Controller extends WP_REST_Controller {
         ],
     ];
 
-		return $cordialBody;
+		$reponse = $this->cordial->postNotification( $template_type, $cordialBody );
+
+		return $reponse;
 	}
 }
  ?>
