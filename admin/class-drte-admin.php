@@ -368,6 +368,6 @@ class DRTE_Admin {
 	public function drte_complete_endpoint_cb() {
 		$restbase = (get_option( $this->option_name . '_endpoint_restbase' ) === null) ? "confirmation" : get_option( $this->option_name . '_endpoint_restbase' );
 		$namespace = (get_option( $this->option_name . '_endpoint_namespace' ) === null) ? "drwebhook/v1" : get_option( $this->option_name . '_endpoint_namespace' );
-		echo '<div><span>'.home_url().'/</span><span class="output_namespace strong">'.$namespace.'</span>/<span class="output_restbase strong">'.$restbase.'</span></div>';
+		echo '<div><span>'.home_url().'/</span><span class="output_namespace">'.$namespace.'</span>/<span class="output_restbase">'.$restbase.'</span></div>';
 	}
 }
