@@ -18,12 +18,11 @@ class DRTE_REST_Controller extends WP_REST_Controller {
 	 * Register the routes for the objects of the controller.
 	 */
 	public function register_routes() {
-    register_rest_route($this->namespace, '/' . $this->rest_base , array(
-        'methods' 	=> 'POST',
-        'callback'  => array( $this, 'cordial_confirmation' )
-    ));
+		register_rest_route($this->namespace, "/".$this->rest_base , array(
+				'methods' 	=> 'POST',
+				'callback'  => array( $this, 'cordial_confirmation' )
+		));
 	}
-
   /**
 	 * Get one item from the collection
 	 *
@@ -31,17 +30,16 @@ class DRTE_REST_Controller extends WP_REST_Controller {
 	 * @return WP_Error|WP_REST_Response
 	 */
 	public function cordial_confirmation( $request ) {
-
 		$response					= [];
 		$params 					= $request->get_params();
     $webhook_type			= $params["type"];
 		$template_type    = str_replace(".","-",$webhook_type);
     $data             = $params["data"]["object"];
 
+		//$postId						= $this->get_post_id_by_name($client);
 		$cordialBody = [];
 		if ( $webhook_type === "fulfillment.created" ) {
 				$reponse = $this->postFulfillmentCreatedCordialNotification( $template_type, $data);
-
 		} else if ($webhook_type === "order.created") {
 		    //$cordialBody 	= $this->getOrderCreatedCordialBody($data);
 				$reponse = $this->postOrderCreatedCordialNotification( $template_type, $data );
@@ -63,6 +61,7 @@ class DRTE_REST_Controller extends WP_REST_Controller {
 	}
 	private function postFulfillmentCreatedCordialNotification ( $template_type, $data ) {
 
+		$channel	= (!empty($data['metadata']) && !empty($data['metadata']['channel'])) ? $data['metadata']['channel'] : null;
 		$orderId	= $data["orderId"];
 		$email		= (!empty($data['metadata']) && !empty($data['metadata']['email'])) ? $data['metadata']['email'] : null;
 		$name			= (!empty($data['metadata']) && !empty($data['metadata']['name'])) ? $data['metadata']['name'] : null;
@@ -99,14 +98,19 @@ class DRTE_REST_Controller extends WP_REST_Controller {
             ],
         ],
     ];
-		$template_type = $template_type.( ($isCanceled) ? "-canceled" : "-shipped");
-		$reponse = $this->cordial->postNotification( $template_type, $cordialBody );
+
+		$postId 		= $this->get_post_id_by_name($channel);
+		$apiKey 		= get_field( "cordial_api_key", $postId );
+		$messageKey = get_field( "cordial_email_message_keys", $postId )[($isCanceled) ? "order_cancelled" : "order_shipped"];
+
+		$reponse 		= $this->cordial->postNotification( $messageKey, $cordialBody, $apiKey);
 
 		return $reponse;
 	}
 
 	private function postOrderRefundedCordialNotification( $template_type, $data ) {
 
+		$channel	= (!empty($data['metadata']) && !empty($data['metadata']['channel'])) ? $data['metadata']['channel'] : null;
 		$orderId	= $data["id"];
     $email		= $data["email"];
     $name			= $data["shipTo"]["name"];
@@ -135,12 +139,17 @@ class DRTE_REST_Controller extends WP_REST_Controller {
         ],
     ];
 
-		$reponse = $this->cordial->postNotification( $template_type, $cordialBody );
+		$postId 		= $this->get_post_id_by_name($channel);
+		$apiKey 		= get_field( "cordial_api_key", $postId );
+		$messageKey = get_field( "cordial_email_message_keys", $postId )["order_refunded"];
+
+		$reponse 		= $this->cordial->postNotification( $messageKey, $cordialBody, $apiKey);
 
 		return $reponse;
 	}
 	private function postOrderCreatedCordialNotification( $template_type, $data ) {
 
+		$channel				= (!empty($data['metadata']) && !empty($data['metadata']['channel'])) ? $data['metadata']['channel'] : null;
 		$orderId				= $data["id"];
     $email					= $data["email"];
 	  $name						= $data["shipTo"]["name"];
@@ -185,9 +194,20 @@ class DRTE_REST_Controller extends WP_REST_Controller {
         ],
     ];
 
-		$reponse = $this->cordial->postNotification( $template_type, $cordialBody );
+		$postId 		= $this->get_post_id_by_name($channel);
+		$apiKey 		= get_field( "cordial_api_key", $postId );
+		$messageKey = get_field( "cordial_email_message_keys", $postId )["order_confirmation"];
+
+		$reponse 		= $this->cordial->postNotification( $messageKey, $cordialBody, $apiKey);
 
 		return $reponse;
+	}
+	private function get_post_id_by_name($post_name) {
+    global $wpdb;
+    $post = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_title = %s AND post_type='dr_client'" , $post_name ));
+    if ( $post )
+        return $post;
+    return null;
 	}
 }
  ?>

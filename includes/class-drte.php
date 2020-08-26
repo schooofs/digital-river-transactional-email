@@ -115,6 +115,29 @@ class DRTE {
 		 * The class responsible for defining all actions that occur in the admin area.
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-drte-admin.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-drte-post-types.php';
+
+		/**
+		 * Load ACF blocks functions.
+		 */
+
+		 define( 'MF_ACF_PATH', plugin_dir_path( dirname( __FILE__ ) ) . '/includes/acf/' );
+		 define( 'MF_ACF_URL', plugin_dir_url( dirname( __FILE__ ) ) . '/includes/acf/' );
+		 // Include the ACF plugin.
+		 include_once( MF_ACF_PATH . 'acf.php' );
+
+		 // Customize the url setting to fix incorrect asset URLs.
+		 add_filter('acf/settings/url', 'mf_acf_settings_url');
+		 function mf_acf_settings_url( $url ) {
+		     return MF_ACF_URL;
+		 }
+
+		 // (Optional) Hide the ACF admin menu item.
+		 add_filter('acf/settings/show_admin', 'mf_acf_settings_show_admin');
+		 function mf_acf_settings_show_admin( $show_admin ) {
+		     return false;
+		 }
+
 
 		/**
 		 * The class responsible for defining all actions that occur in the public-facing
@@ -165,11 +188,15 @@ class DRTE {
 
 		$plugin_admin = new DRTE_Admin( $this->get_plugin_name(), $this->get_version() );
 
+		new DRTE_Post_Types();
+
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
 
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'add_settings_page' );
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'register_settings_fields' );
+
+		$this->loader->add_action( 'acf/init', $plugin_admin, 'register_acf_field_groups');
 	}
 
 	/**
