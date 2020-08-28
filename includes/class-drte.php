@@ -197,6 +197,7 @@ class DRTE {
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'register_settings_fields' );
 
 		$this->loader->add_action( 'acf/init', $plugin_admin, 'register_acf_field_groups');
+		$this->loader->add_filter( 'acf/save_post', $plugin_admin, 'drte_acf_save_post' );
 	}
 
 	/**

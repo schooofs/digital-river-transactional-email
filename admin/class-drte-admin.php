@@ -112,6 +112,20 @@ class DRTE_Admin {
 	}
 
 	/**
+	 * Add channel/clientName to options.
+	 *
+	 * @since    1.0.0
+	 */
+	function drte_acf_save_post( $post_id ) {
+
+		$channel = $_POST['acf']['field_5f48aa65a5837'];
+		if (get_field( $channel, "options" )) {
+			update_field( $channel, $post_id, "options");
+		}
+
+	}
+
+	/**
 	 * Add settings menu and link it to settings page.
 	 *
 	 * @since    1.0.0
@@ -121,11 +135,30 @@ class DRTE_Admin {
 
 			acf_add_local_field_group(array(
 				'key' => 'group_5f44d25bd6296',
-				'title' => 'Cordial',
+				'title' => 'Client Detail',
 				'fields' => array(
 					array(
+						'key' => 'field_5f48aa65a5837',
+						'label' => 'Client Name',
+						'name' => 'client_name',
+						'type' => 'text',
+						'instructions' => 'Client Name must match DR Webhook json file brand value under metadata.',
+						'required' => 1,
+						'conditional_logic' => 0,
+						'wrapper' => array(
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'default_value' => '',
+						'placeholder' => '',
+						'prepend' => '',
+						'append' => '',
+						'maxlength' => '',
+					),
+					array(
 						'key' => 'field_5f44d386b17b3',
-						'label' => 'API Key',
+						'label' => 'Cordial API Key',
 						'name' => 'cordial_api_key',
 						'type' => 'text',
 						'instructions' => '',
@@ -144,7 +177,7 @@ class DRTE_Admin {
 					),
 					array(
 						'key' => 'field_5f44d52bb17b9',
-						'label' => 'Email Message Keys',
+						'label' => 'Cordial Email Message Keys',
 						'name' => 'cordial_email_message_keys',
 						'type' => 'group',
 						'instructions' => '',

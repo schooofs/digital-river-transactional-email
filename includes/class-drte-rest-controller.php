@@ -35,22 +35,29 @@ class DRTE_REST_Controller extends WP_REST_Controller {
     $webhook_type			= $params["type"];
 		$template_type    = str_replace(".","-",$webhook_type);
     $data             = $params["data"]["object"];
-
-		//$postId						= $this->get_post_id_by_name($client);
-		$cordialBody = [];
+/*
 		if ( $webhook_type === "fulfillment.created" ) {
 				$reponse = $this->postFulfillmentCreatedCordialNotification( $template_type, $data);
 		} else if ($webhook_type === "order.created") {
-		    //$cordialBody 	= $this->getOrderCreatedCordialBody($data);
 				$reponse = $this->postOrderCreatedCordialNotification( $template_type, $data );
 		} else if ($webhook_type === "order.refunded") {
-		    //$cordialBody 	= $this->getOrderRefundedCordialBody($data);
-				//$reponse = $this->cordial->postNotification($template_type,$cordialBody);
 				$reponse = $this->postOrderRefundedCordialNotification( $template_type, $data);
+		}*/
+
+		switch ($webhook_type) {
+		  case "fulfillment.created":
+		    $reponse = $this->postFulfillmentCreatedCordialNotification( $template_type, $data);
+		    break;
+		  case "order.created":
+		    $reponse = $this->postOrderCreatedCordialNotification( $template_type, $data );
+		    break;
+		  case "order.refunded":
+		    $reponse = $this->postOrderRefundedCordialNotification( $template_type, $data );
+		    break;
+		  default:
+				$reponse = ["webhook not registered"];
 		}
-
-
-
+		
     //file_put_contents(plugin_dir_path( dirname( __FILE__ ) ).$webhook_type.'.json', json_encode($params));
 
 		//$reponse = $this->cordial->postNotification($template_type,$cordialBody);
@@ -99,7 +106,7 @@ class DRTE_REST_Controller extends WP_REST_Controller {
         ],
     ];
 
-		$postId 		= $this->get_post_id_by_name($channel);
+		$postId 		= get_field( $channel, "options" );
 		$apiKey 		= get_field( "cordial_api_key", $postId );
 		$messageKey = get_field( "cordial_email_message_keys", $postId )[($isCanceled) ? "order_cancelled" : "order_shipped"];
 
@@ -139,7 +146,7 @@ class DRTE_REST_Controller extends WP_REST_Controller {
         ],
     ];
 
-		$postId 		= $this->get_post_id_by_name($channel);
+		$postId 		= get_field( $channel, "options" );
 		$apiKey 		= get_field( "cordial_api_key", $postId );
 		$messageKey = get_field( "cordial_email_message_keys", $postId )["order_refunded"];
 
@@ -194,20 +201,13 @@ class DRTE_REST_Controller extends WP_REST_Controller {
         ],
     ];
 
-		$postId 		= $this->get_post_id_by_name($channel);
+		$postId 		= get_field( $channel, "options" );
 		$apiKey 		= get_field( "cordial_api_key", $postId );
 		$messageKey = get_field( "cordial_email_message_keys", $postId )["order_confirmation"];
 
 		$reponse 		= $this->cordial->postNotification( $messageKey, $cordialBody, $apiKey);
 
 		return $reponse;
-	}
-	private function get_post_id_by_name($post_name) {
-    global $wpdb;
-    $post = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_title = %s AND post_type='dr_client'" , $post_name ));
-    if ( $post )
-        return $post;
-    return null;
 	}
 }
  ?>

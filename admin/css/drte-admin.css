@@ -6,14 +6,6 @@
 .wp-admin.post-type-dr_client #minor-publishing-actions{
   display:none;
 }
-.wp-admin.post-type-dr_client #titlediv .inside {
-  padding: 3px 8px;
-  font-style: italic;
-}
-.wp-admin.post-type-dr_client #titlediv .inside:after {
-  content: "Client Name must match DR Webhook Brand Value";
-}
-
 .wp-admin.dr_client_page_digital-river-transactional-email .strong {
     font-weight: bold;
 }
