@@ -5,8 +5,8 @@
  * @link       https://www.digitalriver.com
  * @since      1.0.0
  *
- * @package    Digital_River_Global_Commerce
- * @subpackage Digital_River_Global_Commerce/admin
+ * @package    Digital_River_Transactional_Email
+ * @subpackage Digital_River_Transactional_Email/admin
  */
 
 class DRTE_Admin {
@@ -48,24 +48,6 @@ class DRTE_Admin {
 	private $option_name = 'drte';
 
 	/**
-	 * Cordial API key
-	 *
-	 * @since    1.0.0
-	 * @access   private
-	 * @var      string
-	 */
-	private $drte_cordial_api_key;
-
-	/**
-	 * Cordial template key
-	 *
-	 * @since    1.0.0
-	 * @access   private
-	 * @var      string
-	 */
-	private $drte_cordial_email_template_key_prefix;
-
-	/**
 	 * Digital River Webhook endpoint namespace
 	 *
 	 * @since    1.0.0
@@ -93,8 +75,6 @@ class DRTE_Admin {
 	public function __construct( $plugin_name, $version ) {
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
-		$this->drte_cordial_api_key = get_option( 'drte_cordial_api_key' );
-		$this->drte_cordial_email_template_key_prefix = get_option( 'drte_cordial_email_template_key_prefix' );
 		$this->drte_endpoint_namespace = get_option( 'drte_endpoint_namespace' );
 		$this->drte_endpoint_restbase = get_option( 'drte_endpoint_restbase' );
 	}
@@ -105,7 +85,7 @@ class DRTE_Admin {
 	 * @since    1.0.0
 	 */
 	public function enqueue_styles() {
-		wp_enqueue_style( $this->drte, DRTE_PLUGIN_URL . 'assets/css/drte-admin.css', array(), $this->version, 'all' );
+		wp_enqueue_style( $this->plugin_name, DRTE_PLUGIN_URL . 'admin/css/drte-admin.css', array(), $this->version, 'all' );
 	}
 
 	/**
@@ -114,19 +94,35 @@ class DRTE_Admin {
 	 * @since    1.0.0
 	 */
 	public function enqueue_scripts() {
-		$suffix = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
-
-		wp_enqueue_script( $this->drte, DRTE_PLUGIN_URL . 'assets/js/drte-admin' . $suffix . '.js', array( 'jquery', 'jquery-ui-progressbar' ), $this->version, false );
+	//	$suffix = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
+		$suffix = "";
+		wp_enqueue_script( $this->plugin_name, DRTE_PLUGIN_URL . 'admin/js/drte-admin' . $suffix . '.js', array( 'jquery', 'jquery-ui-progressbar' ), $this->version, false );
 
 		// transfer drte options from PHP to JS
-		wp_localize_script( $this->drte, 'drte_admin_params',
+		wp_localize_script( $this->plugin_name, 'drte_admin_params',
 			array(
 				'endpoint_namespace' 			=> $this->drte_endpoint_namespace,
-				'endpoint_restbase'		  	=> $this->drte_endpoint_restbase,
-				'api_key'               	=> $this->drte_cordial_api_key,
-				'template_key'			    	=> $this->drte_cordial_email_template_key_prefix
+				'endpoint_restbase'		  	=> $this->drte_endpoint_restbase
 			)
 		);
+
+		if ( 'dr_client' == get_post_type() ) {
+			wp_dequeue_script( 'autosave' );
+		}
+	}
+
+	/**
+	 * Add channel/clientName to options.
+	 *
+	 * @since    1.0.0
+	 */
+	function drte_acf_save_post( $post_id ) {
+
+		$channel = $_POST['acf']['field_5f48aa65a5837'];
+		if (get_field( $channel, "options" )) {
+			update_field( $channel, $post_id, "options");
+		}
+
 	}
 
 	/**
@@ -134,17 +130,183 @@ class DRTE_Admin {
 	 *
 	 * @since    1.0.0
 	 */
+	public function register_acf_field_groups() {
+		if( function_exists('acf_add_local_field_group') ):
+
+			acf_add_local_field_group(array(
+				'key' => 'group_5f44d25bd6296',
+				'title' => 'Client Detail',
+				'fields' => array(
+					array(
+						'key' => 'field_5f48aa65a5837',
+						'label' => 'Client Name',
+						'name' => 'client_name',
+						'type' => 'text',
+						'instructions' => 'Client Name must match DR Webhook json file brand value under metadata.',
+						'required' => 1,
+						'conditional_logic' => 0,
+						'wrapper' => array(
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'default_value' => '',
+						'placeholder' => '',
+						'prepend' => '',
+						'append' => '',
+						'maxlength' => '',
+					),
+					array(
+						'key' => 'field_5f44d386b17b3',
+						'label' => 'Cordial API Key',
+						'name' => 'cordial_api_key',
+						'type' => 'text',
+						'instructions' => '',
+						'required' => 1,
+						'conditional_logic' => 0,
+						'wrapper' => array(
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'default_value' => '',
+						'placeholder' => '',
+						'prepend' => '',
+						'append' => '',
+						'maxlength' => '',
+					),
+					array(
+						'key' => 'field_5f44d52bb17b9',
+						'label' => 'Cordial Email Message Keys',
+						'name' => 'cordial_email_message_keys',
+						'type' => 'group',
+						'instructions' => '',
+						'required' => 1,
+						'conditional_logic' => 0,
+						'wrapper' => array(
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'layout' => 'row',
+						'sub_fields' => array(
+							array(
+								'key' => 'field_5f44d554b17ba',
+								'label' => 'Order Confirmation',
+								'name' => 'order_confirmation',
+								'type' => 'text',
+								'instructions' => '',
+								'required' => 1,
+								'conditional_logic' => 0,
+								'wrapper' => array(
+									'width' => '',
+									'class' => '',
+									'id' => '',
+								),
+								'default_value' => 'dr-webhook-transitional-email-order-created',
+								'placeholder' => 'dr-webhook-transitional-email-order-created',
+								'prepend' => '',
+								'append' => '',
+								'maxlength' => '',
+							),
+							array(
+								'key' => 'field_5f44d5a7b17bb',
+								'label' => 'Order Refunded',
+								'name' => 'order_refunded',
+								'type' => 'text',
+								'instructions' => '',
+								'required' => 1,
+								'conditional_logic' => 0,
+								'wrapper' => array(
+									'width' => '',
+									'class' => '',
+									'id' => '',
+								),
+								'default_value' => 'dr-webhook-transitional-email-order-refunded',
+								'placeholder' => 'dr-webhook-transitional-email-order-refunded',
+								'prepend' => '',
+								'append' => '',
+								'maxlength' => '',
+							),
+							array(
+								'key' => 'field_5f44d5f4b17bc',
+								'label' => 'Order Shipped',
+								'name' => 'order_shipped',
+								'type' => 'text',
+								'instructions' => '',
+								'required' => 1,
+								'conditional_logic' => 0,
+								'wrapper' => array(
+									'width' => '',
+									'class' => '',
+									'id' => '',
+								),
+								'default_value' => 'dr-webhook-transitional-email-fulfillment-created-shipped',
+								'placeholder' => 'dr-webhook-transitional-email-fulfillment-created-shipped',
+								'prepend' => '',
+								'append' => '',
+								'maxlength' => '',
+							),
+							array(
+								'key' => 'field_5f44d607b17bd',
+								'label' => 'Order Cancelled',
+								'name' => 'order_cancelled',
+								'type' => 'text',
+								'instructions' => '',
+								'required' => 1,
+								'conditional_logic' => 0,
+								'wrapper' => array(
+									'width' => '',
+									'class' => '',
+									'id' => '',
+								),
+								'default_value' => 'dr-webhook-transitional-email-fulfillment-created-canceled',
+								'placeholder' => 'dr-webhook-transitional-email-fulfillment-created-canceled',
+								'prepend' => '',
+								'append' => '',
+								'maxlength' => '',
+							),
+						),
+					),
+				),
+				'location' => array(
+					array(
+						array(
+							'param' => 'post_type',
+							'operator' => '==',
+							'value' => 'dr_client',
+						),
+					),
+				),
+				'menu_order' => 0,
+				'position' => 'acf_after_title',
+				'style' => 'default',
+				'label_placement' => 'top',
+				'instruction_placement' => 'field',
+				'hide_on_screen' => '',
+				'active' => true,
+				'description' => '',
+			));
+
+			endif;
+	}
+	/**
+	 * Add settings menu and link it to settings page.
+	 *
+	 * @since    1.0.0
+	 */
 	public function add_settings_page() {
-    add_options_page(
-        __( 'Digital River Transactional Email Settings', 'textdomain' ),
-        __( 'Digital River', 'textdomain' ),
-        'manage_options',
-        'digital-river-transactional-email',
-        array(
+		add_submenu_page(
+		    'edit.php?post_type=dr_client',
+		    __( 'Digital River Webhook Endpoint Setting', 'menu-test' ),
+		    __( 'Setting', 'menu-test' ),
+		    'manage_options',
+		    'digital-river-transactional-email',
+				array(
             $this,
             'display_settings_page'
         )
-    );
+		);
 	}
 
 	/**
@@ -176,7 +338,7 @@ class DRTE_Admin {
 
 		add_settings_field(
 			$this->option_name . '_endpoint_namespace',
-			__( 'Webhook Endpoint Namespace', 'digital-river-global-commerce' ),
+			__( 'Endpoint Namespace', 'digital-river-global-commerce' ),
 			array( $this, $this->option_name . '_endpoint_namespace_cb' ),
 			$this->plugin_name,
 			$this->option_name . '_general',
@@ -185,35 +347,23 @@ class DRTE_Admin {
 
 		add_settings_field(
 			$this->option_name . '_endpoint_restbase',
-			__( 'Webhook Endpoint Base', 'digital-river-global-commerce' ),
+			__( 'Endpoint Base', 'digital-river-global-commerce' ),
 			array( $this, $this->option_name . '_endpoint_restbase_cb' ),
 			$this->plugin_name,
 			$this->option_name . '_general',
 			array( 'label_for' => $this->option_name . '_endpoint_restbase' )
 		);
-
 		add_settings_field(
-			$this->option_name . '_cordial_api_key',
-			__( 'Cordial API Key', 'digital-river-global-commerce' ),
-			array( $this, $this->option_name . '_cordial_api_key_cb' ),
+			$this->option_name . '_complete_endpoint',
+			__( 'Endpoint Output', 'digital-river-global-commerce' ),
+			array( $this, $this->option_name . '_complete_endpoint_cb' ),
 			$this->plugin_name,
 			$this->option_name . '_general',
-			array( 'label_for' => $this->option_name . '_cordial_api_key' )
+			array( 'label_for' => $this->option_name . '_complete_endpoint' )
 		);
-
-		add_settings_field(
-			$this->option_name . '_cordial_email_template_key_prefix',
-			__( 'Cordial Email Template Key Prefix', 'digital-river-global-commerce' ),
-			array( $this, $this->option_name . '_cordial_email_template_key_prefix_cb' ),
-			$this->plugin_name,
-			$this->option_name . '_general',
-			array( 'label_for' => $this->option_name . '_cordial_email_template_key_prefix' )
-		);
-
 		register_setting( $this->plugin_name, $this->option_name . '_endpoint_namespace', array( 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( $this->plugin_name, $this->option_name . '_endpoint_restbase', array( 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ) );
-		register_setting( $this->plugin_name, $this->option_name . '_cordial_email_template_key_prefix', array( 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ) );
-		register_setting( $this->plugin_name, $this->option_name . '_cordial_api_key', array( 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( $this->plugin_name, $this->option_name . '_complete_endpoint', array( 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ) );
 	}
 
 	/**
@@ -222,34 +372,16 @@ class DRTE_Admin {
 	 * @since  1.0.0
 	 */
 	public function drte_general_cb() {
-		return; // No need to print section message
+		echo 'Register Endpoint for Digital River Transitional Email Webhook';
 	}
 
-	/**
-	 * Render input text field for Cordial API Key.
-	 *
-	 * @since    1.0.0
-	 */
-	public function drte_cordial_api_key_cb() {
-		$key = get_option( $this->option_name . '_cordial_api_key' );
-		echo '<input type="text" class="regular-text" name="' . $this->option_name . '_cordial_api_key' . '" id="' . $this->option_name . '_cordial_api_key' . '" value="' . $key . '">';
-	}
-	/**
-	 * Render input text field for Site ID.
-	 *
-	 * @since    1.0.0
-	 */
-	public function drte_cordial_email_template_key_prefix_cb() {
-		$key = get_option( $this->option_name . '_cordial_email_template_key_prefix' );
-		echo '<input type="text" class="regular-text" name="' . $this->option_name . '_cordial_email_template_key_prefix' . '" id="' . $this->option_name . '_cordial_email_template_key_prefix' . '" value="' . $key . '"> ';
-	}
 	/**
 	 * Render input text field for Webhook endpoint namespace.
 	 *
 	 * @since    1.0.0
 	 */
 	public function drte_endpoint_namespace_cb() {
-		$key = get_option( $this->option_name . '_endpoint_namespace' );
+		$key = (get_option( $this->option_name . '_endpoint_namespace' ) === null) ? "drwebhook/v1" : get_option( $this->option_name . '_endpoint_namespace' );
 		echo '<input type="text" class="regular-text" name="' . $this->option_name . '_endpoint_namespace' . '" id="' . $this->option_name . '_endpoint_namespace' . '" value="' . $key . '"> ';
 	}
 	/**
@@ -258,7 +390,17 @@ class DRTE_Admin {
 	 * @since    1.0.0
 	 */
 	public function drte_endpoint_restbase_cb() {
-		$key = get_option( $this->option_name . '_endpoint_restbase' );
+		$key = (get_option( $this->option_name . '_endpoint_restbase' ) === null) ? "confirmation" : get_option( $this->option_name . '_endpoint_restbase' );
 		echo '<input type="text" class="regular-text" name="' . $this->option_name . '_endpoint_restbase' . '" id="' . $this->option_name . '_endpoint_restbase' . '" value="' . $key . '"> ';
+	}
+	/**
+	 * Render input text field for Webhook endpoint base.
+	 *
+	 * @since    1.0.0
+	 */
+	public function drte_complete_endpoint_cb() {
+		$restbase = (get_option( $this->option_name . '_endpoint_restbase' ) === null) ? "confirmation" : get_option( $this->option_name . '_endpoint_restbase' );
+		$namespace = (get_option( $this->option_name . '_endpoint_namespace' ) === null) ? "drwebhook/v1" : get_option( $this->option_name . '_endpoint_namespace' );
+		echo '<div><span>'.home_url().'/</span><span class="output_namespace">'.$namespace.'</span>/<span class="output_restbase">'.$restbase.'</span></div>';
 	}
 }

@@ -28,5 +28,28 @@
 	 * Although scripts in the WordPress core, Plugins and Themes may be
 	 * practising this, we should strive to set a better example in our own work.
 	 */
+	 $(function() {
+		 $("#drte_endpoint_namespace")
+			 .bind("focus", function(){
+					$('.output_namespace').addClass("strong");
+			 })
+			 .bind("blur", function(){
+					$('.output_namespace').removeClass("strong");
+			 })
+			 .bind("keyup", function(){
+					$('.output_namespace').text($(this).val());
+			 });
+		 $("#drte_endpoint_restbase")
+			 .bind("focus", function(){
+					$('.output_restbase').addClass("strong");
+			 })
+			 .bind("blur", function(){
+					$('.output_restbase').removeClass("strong");
+			 })
+		 	.bind("keyup", function(){
+					$('.output_restbase').text($(this).val());
+		 	});
+	 		//jQuery(".post-type-dr_client #titlediv .inside").html('<i>Client Name must match DR Webhook Brand Value</i>');
+	 });
 
 })( jQuery );
