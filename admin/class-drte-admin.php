@@ -119,10 +119,28 @@ class DRTE_Admin {
 	function drte_acf_save_post( $post_id ) {
 
 		$channel = $_POST['acf']['field_5f48aa65a5837'];
-		if (get_field( $channel, "options" )) {
-			update_field( $channel, $post_id, "options");
-		}
 
+		if ( get_option( $channel ) !== false ) {
+		    update_option( $channel, $post_id );
+		} else {
+		    add_option( $channel, $post_id, null, "no" );
+		}
+		/*
+$params =  [
+'identifyBy'    => 'drte_acf_save_post',
+'postid'    => $post_id,
+'channel'		=> $_POST['acf']['field_5f48aa65a5837'],
+"getfield"	=> get_option( $channel ),
+"fields" 	=> $_POST['acf']
+
+];
+file_put_contents(plugin_dir_path( dirname( __FILE__ ) ).'aaa.json', json_encode($params));*/
+
+	}
+	function drte_save_post($post_id) {
+	    // If this is a revision, get real post ID
+	    if ( $parent_id = wp_is_post_revision( $post_id ) )
+	        $post_id = $parent_id;
 	}
 
 	/**

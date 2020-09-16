@@ -57,7 +57,7 @@ class DRTE_REST_Controller extends WP_REST_Controller {
 		  default:
 				$reponse = ["webhook not registered"];
 		}
-		
+
     //file_put_contents(plugin_dir_path( dirname( __FILE__ ) ).$webhook_type.'.json', json_encode($params));
 
 		//$reponse = $this->cordial->postNotification($template_type,$cordialBody);
@@ -106,7 +106,7 @@ class DRTE_REST_Controller extends WP_REST_Controller {
         ],
     ];
 
-		$postId 		= get_field( $channel, "options" );
+		$postId 		= get_option( $channel );
 		$apiKey 		= get_field( "cordial_api_key", $postId );
 		$messageKey = get_field( "cordial_email_message_keys", $postId )[($isCanceled) ? "order_cancelled" : "order_shipped"];
 
@@ -146,7 +146,7 @@ class DRTE_REST_Controller extends WP_REST_Controller {
         ],
     ];
 
-		$postId 		= get_field( $channel, "options" );
+		$postId 		= get_option( $channel );
 		$apiKey 		= get_field( "cordial_api_key", $postId );
 		$messageKey = get_field( "cordial_email_message_keys", $postId )["order_refunded"];
 
@@ -201,10 +201,12 @@ class DRTE_REST_Controller extends WP_REST_Controller {
         ],
     ];
 
-		$postId 		= get_field( $channel, "options" );
-		$apiKey 		= get_field( "cordial_api_key", $postId );
-		$messageKey = get_field( "cordial_email_message_keys", $postId )["order_confirmation"];
+		$postId 		= get_option( $channel );
 
+		$apiKey 		= get_field( "cordial_api_key", $postId );
+
+		$messageKey = get_field( "cordial_email_message_keys", $postId )["order_confirmation"];
+//return $messageKey;
 		$reponse 		= $this->cordial->postNotification( $messageKey, $cordialBody, $apiKey);
 
 		return $reponse;
