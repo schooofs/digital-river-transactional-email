@@ -206,7 +206,7 @@ class DRTE_REST_Controller extends WP_REST_Controller {
 		$apiKey 		= get_field( "cordial_api_key", $postId );
 
 		$messageKey = get_field( "cordial_email_message_keys", $postId )["order_confirmation"];
-//return $messageKey;
+
 		$reponse 		= $this->cordial->postNotification( $messageKey, $cordialBody, $apiKey);
 
 		return $reponse;
