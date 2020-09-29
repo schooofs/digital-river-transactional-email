@@ -33,40 +33,36 @@ class DRTE_REST_Controller extends WP_REST_Controller {
 		$response					= [];
 		$params 					= $request->get_params();
     $webhook_type			= $params["type"];
-		$template_type    = str_replace(".","-",$webhook_type);
+    $orderId          = (isset($params["data"]["object"]["id"]) ? $params["data"]["object"]["id"] : $params["data"]["object"]["orderId"]);
     $data             = $params["data"]["object"];
-/*
-		if ( $webhook_type === "fulfillment.created" ) {
-				$reponse = $this->postFulfillmentCreatedCordialNotification( $template_type, $data);
-		} else if ($webhook_type === "order.created") {
-				$reponse = $this->postOrderCreatedCordialNotification( $template_type, $data );
-		} else if ($webhook_type === "order.refunded") {
-				$reponse = $this->postOrderRefundedCordialNotification( $template_type, $data);
-		}*/
 
-		switch ($webhook_type) {
-		  case "fulfillment.created":
-		    $reponse = $this->postFulfillmentCreatedCordialNotification( $template_type, $data);
-		    break;
-		  case "order.created":
-		    $reponse = $this->postOrderCreatedCordialNotification( $template_type, $data );
-		    break;
-		  case "order.refunded":
-		    $reponse = $this->postOrderRefundedCordialNotification( $template_type, $data );
-		    break;
-		  default:
-				$reponse = ["webhook not registered"];
+		try {
+			switch ($webhook_type) {
+				case "fulfillment.created":
+					$reponse = $this->postFulfillmentCreatedCordialNotification( $data );
+					break;
+				case "order.created":
+					$reponse = $this->postOrderCreatedCordialNotification(  $data );
+					break;
+				case "order.refunded":
+					$reponse = $this->postOrderRefundedCordialNotification( $data );
+					break;
+				default:
+					$reponse = ["webhook not registered"];
+			}
+		} catch (Exception $exception) {//
+				$responseBody = (string)$exception->getResponse()->getBody();
+				$log = [
+						'webhook'    => $webhook_type,
+						'orderId'    => $orderId,
+		        'response'  => $responseBody
+					];
+				echo json_encode($log);
+ 				error_log(json_encode($log));
 		}
-
-    //file_put_contents(plugin_dir_path( dirname( __FILE__ ) ).$webhook_type.'.json', json_encode($params));
-
-		//$reponse = $this->cordial->postNotification($template_type,$cordialBody);
-
-		//file_put_contents(plugin_dir_path( dirname( __FILE__ ) ).$webhook_type.'_reponse.json', json_encode($reponse));
-
 		return $reponse;
 	}
-	private function postFulfillmentCreatedCordialNotification ( $template_type, $data ) {
+	private function postFulfillmentCreatedCordialNotification ( $data ) {
 
 		$channel	= (!empty($data['metadata']) && !empty($data['metadata']['channel'])) ? $data['metadata']['channel'] : null;
 		$orderId	= $data["orderId"];
@@ -115,7 +111,7 @@ class DRTE_REST_Controller extends WP_REST_Controller {
 		return $reponse;
 	}
 
-	private function postOrderRefundedCordialNotification( $template_type, $data ) {
+	private function postOrderRefundedCordialNotification(  $data ) {
 
 		$channel	= (!empty($data['metadata']) && !empty($data['metadata']['channel'])) ? $data['metadata']['channel'] : null;
 		$orderId	= $data["id"];
@@ -154,7 +150,7 @@ class DRTE_REST_Controller extends WP_REST_Controller {
 
 		return $reponse;
 	}
-	private function postOrderCreatedCordialNotification( $template_type, $data ) {
+	private function postOrderCreatedCordialNotification(  $data ) {
 
 		$channel				= (!empty($data['metadata']) && !empty($data['metadata']['channel'])) ? $data['metadata']['channel'] : null;
 		$orderId				= $data["id"];
@@ -206,7 +202,7 @@ class DRTE_REST_Controller extends WP_REST_Controller {
 		$apiKey 		= get_field( "cordial_api_key", $postId );
 
 		$messageKey = get_field( "cordial_email_message_keys", $postId )["order_confirmation"];
-
+echo $postId. "_" .$apiKey. "_" .$messageKey;
 		$reponse 		= $this->cordial->postNotification( $messageKey, $cordialBody, $apiKey);
 
 		return $reponse;

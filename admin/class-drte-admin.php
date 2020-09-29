@@ -117,9 +117,11 @@ class DRTE_Admin {
 	 * @since    1.0.0
 	 */
 	function drte_acf_save_post( $post_id ) {
-
+//error_log(  "drte_acf_save_post -------------------".$post_id);
 		$channel = $_POST['acf']['field_5f48aa65a5837'];
-
+//echo $channel;
+//error_log(  "drte_acf_save_post -------------------".$post_id." channel ".$channel);
+//error_log("drte_acf_save_post getoption" .get_option( $channel ));
 		if ( get_option( $channel ) !== false ) {
 		    update_option( $channel, $post_id );
 		} else {

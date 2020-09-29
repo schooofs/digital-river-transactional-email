@@ -22,27 +22,15 @@ class CI_Cordial
             ]);
         }*/
     }
-    /*public function postNotification( $templateKeyPostfix , $data ) {
-
-        $response = $this->httpClient->request('POST',
-          $this->endPoint . $this->templateKeyPrefix . $templateKeyPostfix .'/send' ,  [
-            'form_params' => $data,
-        ] );
-
-        //    error_log(  $this->endPoint . $this->templateKeyPrefix . $templateKeyPostfix);
-        $response = json_decode($response->getBody(), true);
-        $response['url'] = $this->endPoint . $this->templateKeyPrefix . $templateKeyPostfix .'/send';
-
-        return $response;
-    }*/
     public function postNotification( $messageKey , $data, $apiKey ) {
         $this->httpClient = new \GuzzleHttp\Client([
             'headers' => [
                 'Content-Type' => 'application/json',
                 'accept' => 'application/json',
-                'Authorization' => 'Basic ' . base64_encode($apiKey.':'),
+                'Authorization' => 'Basic '.base64_encode($apiKey.':'),
             ]
         ]);
+        //return base64_encode("5f3209c15e720f48e060cec3-XomFIPaBgTF9qoRu5zjaPrlBXvbw60G2");
         $response = $this->httpClient->request('POST',
           $this->endPoint . $messageKey .'/send' ,  [
             'form_params' => $data,
