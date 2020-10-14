@@ -43,7 +43,7 @@ define( 'DRTE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
  * The code that runs during plugin activation.
  * This action is documented in includes/class-digital-river-transactional-email-activator.php
  */
-function activate_digital_river_transactional_email() {
+function drte_activate_plugin() {
 	require_once plugin_dir_path( __FILE__ ) . 'includes/class-drte-activator.php';
 	DRTE_Activator::activate();
 }
@@ -52,13 +52,13 @@ function activate_digital_river_transactional_email() {
  * The code that runs during plugin deactivation.
  * This action is documented in includes/class-digital-river-transactional-email-deactivator.php
  */
-function deactivate_digital_river_transactional_email() {
+function drte_deactivate_plugin() {
 	require_once plugin_dir_path( __FILE__ ) . 'includes/class-drte-deactivator.php';
 	DRTE_Deactivator::deactivate();
 }
 
-register_activation_hook( __FILE__, 'activate_drte' );
-register_deactivation_hook( __FILE__, 'deactivate_drte' );
+register_activation_hook( __FILE__, 'drte_activate_plugin' );
+register_deactivation_hook( __FILE__, 'drte_deactivate_plugin' );
 
 /**
  * The core plugin class that is used to define internationalization,

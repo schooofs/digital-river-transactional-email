@@ -64,7 +64,7 @@ class DRTE_REST_Controller extends WP_REST_Controller {
 	}
 	private function postFulfillmentCreatedCordialNotification ( $data ) {
 
-		$channel	= (!empty($data['metadata']) && !empty($data['metadata']['channel'])) ? $data['metadata']['channel'] : null;
+		$channel	= (!empty($data['metadata']) && !empty($data['metadata']['channel'])) ? $data['metadata']['channel'] : "amazon";
 		$orderId	= $data["orderId"];
 		$email		= (!empty($data['metadata']) && !empty($data['metadata']['email'])) ? $data['metadata']['email'] : null;
 		$name			= (!empty($data['metadata']) && !empty($data['metadata']['name'])) ? $data['metadata']['name'] : null;
@@ -103,6 +103,8 @@ class DRTE_REST_Controller extends WP_REST_Controller {
     ];
 
 		$postId 		= get_option( $channel );
+		if (empty($postId)) $postId 		= get_option( "amazon" );
+
 		$apiKey 		= get_field( "cordial_api_key", $postId );
 		$messageKey = get_field( "cordial_email_message_keys", $postId )[($isCanceled) ? "order_cancelled" : "order_shipped"];
 
@@ -113,7 +115,7 @@ class DRTE_REST_Controller extends WP_REST_Controller {
 
 	private function postOrderRefundedCordialNotification(  $data ) {
 
-		$channel	= (!empty($data['metadata']) && !empty($data['metadata']['channel'])) ? $data['metadata']['channel'] : null;
+		$channel	= (!empty($data['metadata']) && !empty($data['metadata']['channel'])) ? $data['metadata']['channel'] : "amazon";
 		$orderId	= $data["id"];
     $email		= $data["email"];
     $name			= $data["shipTo"]["name"];
@@ -143,6 +145,7 @@ class DRTE_REST_Controller extends WP_REST_Controller {
     ];
 
 		$postId 		= get_option( $channel );
+		if (empty($postId)) $postId 		= get_option( "amazon" );
 		$apiKey 		= get_field( "cordial_api_key", $postId );
 		$messageKey = get_field( "cordial_email_message_keys", $postId )["order_refunded"];
 
@@ -152,7 +155,7 @@ class DRTE_REST_Controller extends WP_REST_Controller {
 	}
 	private function postOrderCreatedCordialNotification(  $data ) {
 
-		$channel				= (!empty($data['metadata']) && !empty($data['metadata']['channel'])) ? $data['metadata']['channel'] : null;
+		$channel				= (!empty($data['metadata']) && !empty($data['metadata']['channel'])) ? $data['metadata']['channel'] : "amazon";
 		$orderId				= $data["id"];
     $email					= $data["email"];
 	  $name						= $data["shipTo"]["name"];
@@ -199,10 +202,12 @@ class DRTE_REST_Controller extends WP_REST_Controller {
 
 		$postId 		= get_option( $channel );
 
+		if (empty($postId)) $postId 		= get_option( "amazon" );
+
 		$apiKey 		= get_field( "cordial_api_key", $postId );
 
 		$messageKey = get_field( "cordial_email_message_keys", $postId )["order_confirmation"];
-echo $postId. "_" .$apiKey. "_" .$messageKey;
+		
 		$reponse 		= $this->cordial->postNotification( $messageKey, $cordialBody, $apiKey);
 
 		return $reponse;
