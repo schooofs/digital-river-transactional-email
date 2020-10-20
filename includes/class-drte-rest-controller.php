@@ -115,10 +115,11 @@ class DRTE_REST_Controller extends WP_REST_Controller {
 
 	private function postOrderRefundedCordialNotification(  $data ) {
 
-		$channel	= (!empty($data['metadata']) && !empty($data['metadata']['channel'])) ? $data['metadata']['channel'] : "amazon";
-		$orderId	= $data["id"];
-    $email		= $data["email"];
-    $name			= $data["shipTo"]["name"];
+		$channel				= (!empty($data['metadata']) && !empty($data['metadata']['channel'])) ? $data['metadata']['channel'] : "amazon";
+		$orderId				= $data["id"];
+    $email					= $data["email"];
+    $name						= $data["shipTo"]["name"];
+    $refoundAmount	= $data["refundedAmount"];
 
     $items	= array();
 		if(array_key_exists('items', $data)) {
@@ -137,9 +138,10 @@ class DRTE_REST_Controller extends WP_REST_Controller {
                 'email'     => $email,
             ],
             'extVars'		=> [
-                'dr_orderId'=> $orderId,
-                'dr_name'   => $data["shipTo"]["name"],
-								'dr_items'  => $items
+                'dr_orderId'				=> $orderId,
+                'dr_name'   				=> $data["shipTo"]["name"],
+                'dr_refundedAmount' => floatval($refoundAmount),
+								'dr_items'  				=> $items
             ],
         ],
     ];
@@ -207,7 +209,7 @@ class DRTE_REST_Controller extends WP_REST_Controller {
 		$apiKey 		= get_field( "cordial_api_key", $postId );
 
 		$messageKey = get_field( "cordial_email_message_keys", $postId )["order_confirmation"];
-		
+
 		$reponse 		= $this->cordial->postNotification( $messageKey, $cordialBody, $apiKey);
 
 		return $reponse;
