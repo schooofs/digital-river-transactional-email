@@ -172,8 +172,8 @@ class DRTE_REST_Controller extends WP_REST_Controller {
 	          $items[] = array (
 	              'sku'					=> $item['skuId'],
 	              'quantity'		=> !empty($item['quantity']) ? $item['quantity'] : 0,
-	              'amount'			=> !empty($item['amount']) ? $item['amount'] : 0.00,
-								'totalAmount'	=> (!empty($item['amount']) && !empty($item['quantity']))  ? $item['amount']*$item['quantity'] : 0.00,
+	              'amount'			=> (!empty($item['amount']) && !empty($item['quantity']))  ? $item['amount']/$item['quantity'] : 0.00,
+								'totalAmount'	=> !empty($item['amount']) ? $item['amount'] : 0.00,
 	              'name'				=> (!empty($item['metadata']) && !empty($item['metadata']['name'])) ? $item['metadata']['name'] : null,
 	          );
 	      }
